@@ -62,7 +62,47 @@ s2 = addfields(s0,s1);
 assert(isequal(s,s2))
 end
 
+function testCellStruct(testCase)
+s0 = testCase.TestData.s0;
+s = struct;
+s.canis.dirus = 'Dire Wolf';
+s.canis.lupus = 'Grey Wolf';
+s.canis.nspecies = 2;
+s.homo.sapien = 'Human';
+s.homo.erectus = '(Extinct)';
+s.ngenus = 2;
 
+s1 = struct;
+s1.canis.dirus = 'Dire Wolf';
+s1.homo.erectus = '(Extinct)';
+
+s2 = addfields(s0,{s1});
+assert(isequal(s,s2))
+end
+
+function testStructStruct(testCase)
+s0 = testCase.TestData.s0;
+s = struct;
+s.canis.dirus = 'Dire Wolf';
+s.canis.lupus = 'Grey Wolf';
+s.canis.nspecies = 2;
+s.homo.sapien = 'Human';
+s.homo.erectus = '(Extinct)';
+s.ngenus = 2;
+s.felis = struct;
+s.felis(1).silvestris = 'cat';
+s.felis(2).silvestris = 'kitty cat';
+
+s1 = struct;
+s1.canis.dirus = 'Dire Wolf';
+s1.homo.erectus = '(Extinct)';
+s1.felis = struct;
+s1.felis(1).silvestris = 'cat';
+s1.felis(2).silvestris = 'kitty cat';
+
+s2 = addfields(s0,s1);
+assert(isequal(s,s2))
+end
 
 
 function setupOnce(testCase)
