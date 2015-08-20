@@ -24,6 +24,11 @@ end
 load(filename)
 
 teamname=lower(teamname);
+
+if strcmpi(teamname,'all')
+    teamname = ' ';
+end
+
 if(exist('leaguename','var'))
     leaguename=lower(leaguename);
 end
@@ -36,16 +41,25 @@ for i=1:length(teams)
                 continue
             end
         end
-        colors=teams{i}.colors;
-        name=teams{i}.name;
-        league=teams{i}.league;
         count=count+1;
+        Colors{count}=teams{i}.colors;
+        Name{count}=teams{i}.name;
+        League{count}=teams{i}.league;
     end
 end
 if(count>1)
-    warning('Matches:Multi',sprintf('Ambiguity in team name. Using %s (%s).',name,league));
+    for i = 1:count        
+    fprintf(sprintf('<a href="matlab:colormap(genColorMap(getTeamColors(''%s'',''%s'')));">%s (%s)</a>\n',Name{i},League{i},Name{i},League{i}));
+    end
+    if nargout > 0;
+        warning('Matches:Multi',sprintf('Ambiguity in team name. Using %s (%s).',Name{1},League{1}));
+    else
+        return    
+    end
 elseif(count==0)
     error('No team found')
 end
-
+    colors = Colors{1};
+    name = Name{1};
+    League = League{1};
 end
