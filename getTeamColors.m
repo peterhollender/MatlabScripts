@@ -3,7 +3,8 @@
 % Usage: [colors name league] = getTeamColors(teamname,league,filename)
 %
 % inputs:
-% teamname - Any part of a team name (case insensitive)
+% teamname - Any part of a team name (case insensitive), use 'all' for a
+%            complete listing
 % league - (optional) League abbreviation of team
 % filename - (optional) Path to team database file
 %
@@ -12,9 +13,12 @@
 % name - Team name
 % league - League name
 %
-% Will give an error if more than one team matches the search criteria
+% Will give a warning if more than one team matches the search criteria,
+% unless team is set to 'all' and no output arguments are specified, in
+% which case it will generate a series of links to set the colors.
 %
 % Nick Bottenus - 7/23/14
+% Peter Hollender - 8/20/15
 
 function [colors name league] = getTeamColors(teamname,leaguename,filename)
 
