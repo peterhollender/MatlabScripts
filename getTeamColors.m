@@ -46,7 +46,7 @@ for i=1:length(teams)
             end
         end
         count=count+1;
-        Colors{count}=teams{i}.colors;
+        Colors{count}=max(0,min(1,teams{i}.colors));
         Name{count}=teams{i}.name;
         League{count}=teams{i}.league;
     end

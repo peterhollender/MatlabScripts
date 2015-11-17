@@ -59,7 +59,7 @@ for i = 1:size(colorList,1)
     b0 = colorSort(i,3);
     brkpt0 = brkpt;
 end
-map = [r g b];
+map = max(0,min(1,[r g b]));
 end
 
 function colorList = parseColorSpec(colorSpec)
