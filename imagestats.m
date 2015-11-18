@@ -27,7 +27,19 @@ patchHandle = hObject.Parent.UserData.patchHandle;
 [index, patchindex] = findROI(imHandle,patchHandle);
 delete(patchHandle);
 if length(imHandle.UserData.ROI(index).patchHandle) == 1
+    if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
+        delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
+    end
+    if ~isempty(imHandle.UserData.Comparison)
+        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.bgROI)
+            if ~isempty(imHandle.UserData.Comparison.compTable) && ishandle(imHandle.UserData.Comparison.compTable)
+                delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
+            end
+            imHandle.UserData.Comparison = [];
+        end
+    end
     imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
+    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 else
     imHandle.UserData.ROI(index).patchHandle = imHandle.UserData.ROI(index).patchHandle([1:patchindex-1 patchindex+1:end]);
     imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
@@ -35,64 +47,60 @@ end
 end
 
 function ROI = updateROI(ROI)
-if isempty(ROI)
-    return
+for i = 1:length(ROI);
+    index = findROI(ROI(i).imHandle,ROI(i).patchHandle(1));
+    ColorOrder = get(ancestor(ROI(i).patchHandle(1),'axes'),'ColorOrder');
+    set(ROI(i).patchHandle(:),'FaceColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'EdgeColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:));
 end
-if length(ROI)>1
-    for i = 1:length(ROI);
-        ROI(i) = updateROI(ROI(i));
+for k = 1:length(ROI);
+    index = findROI(ROI(k).imHandle,ROI(k).patchHandle(1));
+    mask = getROImask(ROI(k).imHandle,ROI(k).patchHandle);
+    ROI1 = getROIdata(ROI(k).imHandle,mask);
+    fnames = fieldnames(ROI1);
+    for i = 2:length(fnames)
+        ROI(k).(fnames{i}) = ROI1.(fnames{i});
     end
-    return
-end
-index = findROI(ROI.imHandle,ROI.patchHandle(1));
-ColorOrder = get(ancestor(ROI.patchHandle(1),'axes'),'ColorOrder');
-set(ROI.patchHandle(:),'FaceColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:));
-mask = getROImask(ROI.imHandle,ROI.patchHandle);
-ROI1 = getROIdata(ROI.imHandle,mask);
-fnames = fieldnames(ROI1);
-for i = 2:length(fnames)
-    ROI.(fnames{i}) = ROI1.(fnames{i});
-end
-if ~isempty(ROI.statTable) && ishandle(ROI.statTable)
-    set(ROI.statTable,'Data',ROI2cell(ROI));
-end
-for i = 1:length(ROI.patchHandle)
-    UIMenu = ROI.patchHandle(i).UIContextMenu;
-    UIMenu.Children(end).Label = ROI.Name;
-    statsIndex = find(strcmp({UIMenu.Children.Label},'Stats'));
-    statsMenu = UIMenu.Children(statsIndex);
-    if ~isempty(statsMenu.Children)
-        delete(statsMenu.Children);
+    if ~isempty(ROI(k).statTable) && ishandle(ROI(k).statTable)
+        set(ROI(k).statTable,'Data',ROI2cell(ROI(k)));
     end
-    for j = 1:length(fnames)
-        if isnumeric(ROI.(fnames{j}))
-            uimenu('Parent',statsMenu,'Label',sprintf('%s: %g',fnames{j},ROI.(fnames{j})));
+    for i = 1:length(ROI(k).patchHandle)
+        UIMenu = ROI(k).patchHandle(i).UIContextMenu;
+        UIMenu.Children(end).Label = ROI(k).Name;
+        statsIndex = find(strcmp({UIMenu.Children.Label},'Stats'));
+        statsMenu = UIMenu.Children(statsIndex);
+        if ~isempty(statsMenu.Children)
+            delete(statsMenu.Children);
         end
-    end
-    compareIndex = find(strcmp({UIMenu.Children.Label},'Compare Against...'));
-    compareMenu = UIMenu.Children(compareIndex);
-    if ~isempty(compareMenu.Children)
-        delete(compareMenu.Children);
-    end
-    for j = [1:index-1 index+1:length(ROI.imHandle.UserData.ROI)];
-       uimenu('Parent',compareMenu,'Label',ROI.imHandle.UserData.ROI(j).Name,'Callback',@compareAgainst,'ForeGroundColor',ROI.imHandle.UserData.ROI(j).patchHandle(1).FaceColor); 
-    end
-end
-imHandle = ROI.imHandle;
-if ~isempty(imHandle.UserData.Comparison)
-    if strcmp(ROI.Name,imHandle.UserData.Comparison.fgROI) || strcmp(ROI.Name,imHandle.UserData.Comparison.bgROI)
-        index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.fgROI));
-        index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.bgROI));
-        Comparison = getComparison(imHandle,index0,index1);
-        if isfield(imHandle.UserData.Comparison,'compTable')
-            Comparison.compTable = imHandle.UserData.Comparison.compTable;
-            if  ~isempty(Comparison.compTable) && ishandle(Comparison.compTable)
-                set(Comparison.compTable,'Data',comp2cell(Comparison));
+        for j = 1:length(fnames)
+            if isnumeric(ROI(k).(fnames{j}))
+                uimenu('Parent',statsMenu,'Label',sprintf('%s: %g',fnames{j},ROI(k).(fnames{j})));
             end
-        else
-            Comparison.compTable = [];
         end
-        imHandle.UserData.Comparison = Comparison;
+        compareIndex = find(strcmp({UIMenu.Children.Label},'Compare Against...'));
+        compareMenu = UIMenu.Children(compareIndex);
+        if ~isempty(compareMenu.Children)
+            delete(compareMenu.Children);
+        end
+        for j = [1:index-1 index+1:length(ROI(k).imHandle.UserData.ROI)];
+            uimenu('Parent',compareMenu,'Label',ROI(k).imHandle.UserData.ROI(j).Name,'Callback',@compareAgainst,'ForeGroundColor',ROI(k).imHandle.UserData.ROI(j).patchHandle(1).FaceColor);
+        end
+    end
+    imHandle = ROI(k).imHandle;
+    if ~isempty(imHandle.UserData.Comparison)
+        if strcmp(ROI(k).Name,imHandle.UserData.Comparison.fgROI) || strcmp(ROI(k).Name,imHandle.UserData.Comparison.bgROI)
+            index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.fgROI));
+            index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.bgROI));
+            Comparison = getComparison(imHandle,index0,index1);
+            if isfield(imHandle.UserData.Comparison,'compTable')
+                Comparison.compTable = imHandle.UserData.Comparison.compTable;
+                if  ~isempty(Comparison.compTable) && ishandle(Comparison.compTable)
+                    set(Comparison.compTable,'Data',comp2cell(Comparison));
+                end
+            else
+                Comparison.compTable = [];
+            end
+            imHandle.UserData.Comparison = Comparison;
+        end
     end
 end
 end
@@ -147,7 +155,7 @@ end
 function patchHandle = newPatch(imHandle,x,y,index)
 axH = ancestor(imHandle,'Axes');
 ColorOrder = get(axH,'ColorOrder');
-patchHandle = patch(x,y,get(axH,'XColor'),'edgecolor',get(axH,'XColor'),'facecolor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'facealpha',0.3,'Tag','ROI');
+patchHandle = patch(x,y,get(axH,'XColor'),'edgecolor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'linewidth',2,'facecolor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'facealpha',0.1,'Tag','ROI');
 c = uicontextmenu('UserData',struct('imHandle',imHandle,'patchHandle',patchHandle));
 patchHandle.UIContextMenu = c;
 uimenu(c,'Label','NAME','Callback',@renameROI);
@@ -178,8 +186,8 @@ end
 end
 
 function C = ROI2cell(ROI)
-    C = [fieldnames(ROI) struct2cell(ROI)];
-    C = C(1:6,:);
+C = [fieldnames(ROI) struct2cell(ROI)];
+C = C(1:6,:);
 end
 
 function compareAgainst(hObject,eventdata)
@@ -225,8 +233,8 @@ Comparison.TTest_DiffMeansCI = CI;
 end
 
 function C = comp2cell(COMP)
-    C = [fieldnames(COMP) struct2cell(COMP)];
-    C = C(1:8,:);
+C = [fieldnames(COMP) struct2cell(COMP)];
+C = C(1:8,:);
 end
 
 function renameROI(hObject,eventdata)
@@ -261,8 +269,8 @@ if index == 1;
 else
     i = 0;
     while any(strcmp({imHandle.UserData.ROI.Name},roidata.Name))
-    i = i+1;
-    roidata.Name = sprintf('ROI %g',index+i);
+        i = i+1;
+        roidata.Name = sprintf('ROI %g',index+i);
     end
     imHandle.UserData.ROI(index) = roidata;
 end
