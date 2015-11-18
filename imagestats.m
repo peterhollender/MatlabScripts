@@ -5,10 +5,10 @@ c = uicontextmenu('UserData',struct('imHandle',imHandle));
 imHandle.UIContextMenu = c;
 uimenu(c,'Label','Draw New ROI','Callback',@drawNewROI);
 uimenu(c,'Label','Clear All ROIs','Callback',@clearAllROI);
-addlistener(imHandle,'CData','PostSet',@notification)
+addlistener(imHandle,'CData','PostSet',@cDataChange)
 end
 
-function notification(hObject,eventdata)
+function cDataChange(hObject,eventdata)
 imHandle = eventdata.AffectedObject;
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
@@ -188,34 +188,20 @@ patchHandle = hObject.Parent.Parent.UserData.patchHandle;
 [index0,patchindex0] = findROI(imHandle,patchHandle);
 index1 = find(strcmp({imHandle.UserData.ROI.Name},hObject.Label));
 Comparison = getComparison(imHandle,index0,index1);
-% roidata0 = imHandle.UserData.ROI(index0);
-% roidata1 = imHandle.UserData.ROI(index1);
-% mask0 = getROImask(imHandle,roidata0.patchHandle);
-% mask1 = getROImask(imHandle,roidata1.patchHandle);
-% roidata0 = getROIdata(imHandle,mask0);
-% roidata1 = getROIdata(imHandle,mask1);
-% cdata = imHandle.CData;
-% [H,P,CI] = ttest2(cdata(mask0),cdata(mask1));
-% Comparison.fgROI = imHandle.UserData.ROI(index0).Name;
-% Comparison.bgROI = imHandle.UserData.ROI(index1).Name;
-% Comparison.ratio = roidata0.mean/roidata1.mean;
-% Comparison.contrast = (roidata0.mean-roidata1.mean)/roidata1.mean;
-% Comparison.std_joint = sqrt((roidata0.N*(roidata0.std^2)+roidata1.N*(roidata1.std^2))/(roidata0.N+roidata1.N));
-% Comparison.CNR = abs(roidata0.mean-roidata1.mean)/Comparison.std_joint;
-% Comparison.TTest_H = H;
-% Comparison.TTest_P = P;
-% Comparison.TTest_DiffMeansCI = CI;
 fprintf('Comparison:\n');
 disp(Comparison);
 if ~isfield(imHandle.UserData.Comparison,'compTable') || isempty(imHandle.UserData.Comparison.compTable) || ~ishandle(imHandle.UserData.Comparison.compTable)
     fpos = get(ancestor(imHandle,'figure'),'position');
     f = figure;
-    set(f,'Position',[fpos(1)+200 fpos(2) 220 230]);
+    set(f,'Position',[fpos(1)+200 fpos(2) 230 230]);
     set(f,'ToolBar','none','MenuBar','none','NumberTitle','off','Name','Comparison','Resize','off')
     C = comp2cell(Comparison);
-    Comparison.compTable = uitable('Units','pixels','Position',[0 0 220 230],'ColumnWidth',{90,120},'RowStriping','on','Data',C,'ColumnName',[],'RowName',[],'FontSize',14);
+    Comparison.compTable = uitable('Units','pixels','Position',[0 0 235 230],'ColumnWidth',{100,130},'RowStriping','on','Data',C,'ColumnName',[],'RowName',[],'FontSize',14);
+else
+    Comparison.compTable = imHandle.UserData.Comparison.compTable;
 end
 imHandle.UserData.Comparison = Comparison;
+imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 
 function Comparison = getComparison(imHandle,index0,index1);
