@@ -8,44 +8,6 @@ uimenu(c,'Label','Clear All ROIs','Callback',@clearAllROI);
 addlistener(imHandle,'CData','PostSet',@cDataChange)
 end
 
-function cDataChange(hObject,eventdata)
-imHandle = eventdata.AffectedObject;
-imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
-end
-
-function clearAllROI(hObject,eventdata)
-imHandle = hObject.Parent.UserData.imHandle;
-for i = 1:length(imHandle.UserData.ROI)
-    delete(imHandle.UserData.ROI(i).patchHandle);
-end
-imHandle.UserData.ROI = [];
-end
-
-function deleteROI(hObject,eventdata);
-imHandle = hObject.Parent.UserData.imHandle;
-patchHandle = hObject.Parent.UserData.patchHandle;
-[index, patchindex] = findROI(imHandle,patchHandle);
-delete(patchHandle);
-if length(imHandle.UserData.ROI(index).patchHandle) == 1
-    if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
-        delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
-    end
-    if ~isempty(imHandle.UserData.Comparison)
-        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.bgROI)
-            if ~isempty(imHandle.UserData.Comparison.compTable) && ishandle(imHandle.UserData.Comparison.compTable)
-                delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
-            end
-            imHandle.UserData.Comparison = [];
-        end
-    end
-    imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
-    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
-else
-    imHandle.UserData.ROI(index).patchHandle = imHandle.UserData.ROI(index).patchHandle([1:patchindex-1 patchindex+1:end]);
-    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
-end
-end
-
 function ROI = updateROI(ROI)
 for i = 1:length(ROI);
     index = findROI(ROI(i).imHandle,ROI(i).patchHandle(1));
@@ -66,16 +28,6 @@ for k = 1:length(ROI);
     for i = 1:length(ROI(k).patchHandle)
         UIMenu = ROI(k).patchHandle(i).UIContextMenu;
         UIMenu.Children(end).Label = ROI(k).Name;
-        statsIndex = find(strcmp({UIMenu.Children.Label},'Stats'));
-        statsMenu = UIMenu.Children(statsIndex);
-        if ~isempty(statsMenu.Children)
-            delete(statsMenu.Children);
-        end
-        for j = 1:length(fnames)
-            if isnumeric(ROI(k).(fnames{j}))
-                uimenu('Parent',statsMenu,'Label',sprintf('%s: %g',fnames{j},ROI(k).(fnames{j})));
-            end
-        end
         compareIndex = find(strcmp({UIMenu.Children.Label},'Compare Against...'));
         compareMenu = UIMenu.Children(compareIndex);
         if ~isempty(compareMenu.Children)
@@ -102,6 +54,51 @@ for k = 1:length(ROI);
             imHandle.UserData.Comparison = Comparison;
         end
     end
+end
+end
+
+function cDataChange(hObject,eventdata)
+imHandle = eventdata.AffectedObject;
+imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
+end
+
+function clearAllROI(hObject,eventdata)
+imHandle = hObject.Parent.UserData.imHandle;
+for i = 1:length(imHandle.UserData.ROI)
+    if ishandle(imHandle.UserData.ROI(i).statTable)
+        delete(ancestor(imHandle.UserData.ROI(i).statTable,'figure'))
+    end
+    delete(imHandle.UserData.ROI(i).patchHandle);
+end
+imHandle.UserData.ROI = [];
+if isfield(imHandle.UserData.Comparison,'compTable') && ishandle(imHandle.UserData.Comparison.compTable)
+    delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
+end
+imHandle.UserData.Comparison = [];
+end
+
+function deleteROI(hObject,eventdata);
+imHandle = hObject.Parent.UserData.imHandle;
+patchHandle = hObject.Parent.UserData.patchHandle;
+[index, patchindex] = findROI(imHandle,patchHandle);
+delete(patchHandle);
+if length(imHandle.UserData.ROI(index).patchHandle) == 1
+    if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
+        delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
+    end
+    if ~isempty(imHandle.UserData.Comparison)
+        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.bgROI)
+            if ~isempty(imHandle.UserData.Comparison.compTable) && ishandle(imHandle.UserData.Comparison.compTable)
+                delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
+            end
+            imHandle.UserData.Comparison = [];
+        end
+    end
+    imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
+    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
+else
+    imHandle.UserData.ROI(index).patchHandle = imHandle.UserData.ROI(index).patchHandle([1:patchindex-1 patchindex+1:end]);
+    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 end
 
@@ -162,7 +159,7 @@ uimenu(c,'Label','NAME','Callback',@renameROI);
 uimenu(c,'Label','Delete','Callback',@deleteROI);
 uimenu(c,'Label','Edit','Callback',@editROI);
 uimenu(c,'Label','Add To ROI','Callback',@addNewROI);
-uimenu(c,'Label','Stats');
+%uimenu(c,'Label','Stats');
 uimenu(c,'Label','Show Stats Window','Callback',@toggleStatsWindow);
 uimenu(c,'Label','Compare Against...');
 end
