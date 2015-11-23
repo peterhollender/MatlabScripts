@@ -108,7 +108,7 @@ patchHandle = hObject.Parent.UserData.patchHandle;
 axH = ancestor(imHandle,'Axes');
 index = findROI(imHandle,patchHandle);
 patchindex = length(imHandle.UserData.ROI(index).patchHandle)+1;
-[mask, x, y] = roipoly;
+[~, x, y] = roipoly;
 imHandle.UserData.ROI(index).patchHandle(patchindex) = newPatch(imHandle,x,y,index);
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
