@@ -1,6 +1,6 @@
 function imHandle = imagestats(imHandle)
 imHandle.UserData.ROI= [];
-imHandle.UserData.Comparison = [];
+imHandle.UserData.Comparison = struct([]);
 c = uicontextmenu('UserData',struct('imHandle',imHandle));
 imHandle.UIContextMenu = c;
 uimenu(c,'Label','Draw New ROI','Callback',@drawNewROI);
@@ -38,20 +38,20 @@ for k = 1:length(ROI);
         end
     end
     imHandle = ROI(k).imHandle;
-    if ~isempty(imHandle.UserData.Comparison)
-        if strcmp(ROI(k).Name,imHandle.UserData.Comparison.fgROI) || strcmp(ROI(k).Name,imHandle.UserData.Comparison.bgROI)
-            index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.fgROI));
-            index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison.bgROI));
+    for i = 1:length(imHandle.UserData.Comparison)
+        if strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).bgROI)
+            index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).fgROI));
+            index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).bgROI));
             Comparison = getComparison(imHandle,index0,index1);
-            if isfield(imHandle.UserData.Comparison,'compTable')
-                Comparison.compTable = imHandle.UserData.Comparison.compTable;
+            if isfield(imHandle.UserData.Comparison(i),'compTable')
+                Comparison.compTable = imHandle.UserData.Comparison(i).compTable;
                 if  ~isempty(Comparison.compTable) && ishandle(Comparison.compTable)
                     set(Comparison.compTable,'Data',comp2cell(Comparison));
                 end
             else
                 Comparison.compTable = [];
             end
-            imHandle.UserData.Comparison = Comparison;
+            imHandle.UserData.Comparison(i) = Comparison;
         end
     end
 end
@@ -71,10 +71,12 @@ for i = 1:length(imHandle.UserData.ROI)
     delete(imHandle.UserData.ROI(i).patchHandle);
 end
 imHandle.UserData.ROI = [];
-if isfield(imHandle.UserData.Comparison,'compTable') && ishandle(imHandle.UserData.Comparison.compTable)
-    delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
+for i = 1:length(imHandle.UserData.Comparison)
+    if isfield(imHandle.UserData.Comparison(i),'compTable') && ishandle(imHandle.UserData.Comparison(i).compTable)
+        delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
+    end
 end
-imHandle.UserData.Comparison = [];
+imHandle.UserData.Comparison = imHandle.UserData.Comparison([]);
 end
 
 function deleteROI(hObject,eventdata);
@@ -86,14 +88,16 @@ if length(imHandle.UserData.ROI(index).patchHandle) == 1
     if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
         delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
     end
-    if ~isempty(imHandle.UserData.Comparison)
-        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison.bgROI)
-            if ~isempty(imHandle.UserData.Comparison.compTable) && ishandle(imHandle.UserData.Comparison.compTable)
-                delete(ancestor(imHandle.UserData.Comparison.compTable,'figure'));
+    keepidx = 1:length(imHandle.UserData.Comparison);
+    for i = 1:length(imHandle.UserData.Comparison)
+        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).bgROI)
+            keepidx(i) = 0;
+            if ~isempty(imHandle.UserData.Comparison(i).compTable) && ishandle(imHandle.UserData.Comparison(i).compTable)
+                delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
             end
-            imHandle.UserData.Comparison = [];
         end
     end
+    imHandle.UserData.Comparison = imHandle.UserData.Comparison(keepidx(keepidx>0));
     imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
     imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 else
@@ -195,7 +199,18 @@ index1 = find(strcmp({imHandle.UserData.ROI.Name},hObject.Label));
 Comparison = getComparison(imHandle,index0,index1);
 fprintf('Comparison:\n');
 disp(Comparison);
-if ~isfield(imHandle.UserData.Comparison,'compTable') || isempty(imHandle.UserData.Comparison.compTable) || ~ishandle(imHandle.UserData.Comparison.compTable)
+newComp = 1;
+for i = 1:length(imHandle.UserData.Comparison)
+    if strcmp(imHandle.UserData.Comparison(i).fgROI,Comparison.fgROI) && strcmp(imHandle.UserData.Comparison(i).bgROI,Comparison.bgROI)
+        newComp = 0;
+        compindex = i;
+    end
+end
+if newComp
+    compindex = length(imHandle.UserData.Comparison)+1;
+end
+
+if newComp || ~ishandle(imHandle.UserData.Comparison(compindex).compTable)
     fpos = get(ancestor(imHandle,'figure'),'position');
     f = figure;
     set(f,'Position',[fpos(1)+200 fpos(2) 230 230]);
@@ -203,9 +218,16 @@ if ~isfield(imHandle.UserData.Comparison,'compTable') || isempty(imHandle.UserDa
     C = comp2cell(Comparison);
     Comparison.compTable = uitable('Units','pixels','Position',[0 0 235 230],'ColumnWidth',{100,130},'RowStriping','on','Data',C,'ColumnName',[],'RowName',[],'FontSize',14);
 else
-    Comparison.compTable = imHandle.UserData.Comparison.compTable;
+    Comparison.compTable = imHandle.UserData.Comparison(compindex).compTable;
 end
-imHandle.UserData.Comparison = Comparison;
+
+
+if isempty(imHandle.UserData.Comparison)
+    imHandle.UserData.Comparison = Comparison;
+else
+    imHandle.UserData.Comparison(compindex) = Comparison;
+end
+
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 
@@ -246,7 +268,16 @@ if ~isempty(j)
         NewName = input(sprintf('Enter new name for %s:',eventdata.Source.Label),'s');
     end
 end
+oldName = imHandle.UserData.ROI(index).Name;
 eventdata.Source.Label = NewName;
+for i = 1:length(imHandle.UserData.Comparison)
+    if strcmp(imHandle.UserData.Comparison(i).fgROI,oldName)
+        imHandle.UserData.Comparison(i).fgROI = newName;
+    end
+    if strcmp(imHandle.UserData.Comparison(i).bgROI,oldName)
+        imHandle.UserData.Comparison(i).bgROI = newName;
+    end
+end
 imHandle.UserData.ROI(index).Name = NewName;
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
