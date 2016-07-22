@@ -23,7 +23,7 @@ if seconds_since_fetch>threshold_seconds
         if ~isempty(strfind(up2date,'up-to-date'));
             status = 0;
         else
-            fprintf('%s\n',up2date);
+            fprintf('%s:\n%s\n',repopath,up2date);
             status = 1;
         end
     catch
