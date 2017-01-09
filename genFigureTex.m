@@ -28,7 +28,7 @@ end
 for i = 1:length(d)
         fprintf(fid,sprintf('%s\n','\\begin{figure}[!htb]'));
         fprintf(fid,sprintf('%s\n','\\centering'));
-        fprintf(fid,sprintf('%s\\\\includegraphics[%s]{%s}\n',absCom,sizeSpec,fullfile(figPath,d(i).name)));
+        %fprintf(fid,sprintf('%s\\\\includegraphics[%s]{%s}\n',absCom,sizeSpec,fullfile(figPath,d(i).name)));
         fprintf(fid,sprintf('%s\\\\includegraphics[%s]{%s}\n',relCom,sizeSpec,d(i).name));
         fprintf(fid,sprintf('\\\\caption{%s}\n',strrep(d(i).name,'_',' ')));
         fprintf(fid,sprintf('\\\\label{fig:%s}\n',strrep(d(i).name(1:end-4),'_','')));
