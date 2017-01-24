@@ -1,6 +1,9 @@
-function mov2gif(M,filename,fps)
+function mov2gif(M,filename,fps,loopcount)
 if ~exist('fps','var')
     fps = 20;
+end
+if ~exist('loopcount','var')
+    loopcount = inf;
 end
 RGB = [M.cdata];
 [X map] = rgb2ind(RGB,255);
