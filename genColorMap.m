@@ -102,9 +102,9 @@ switch class(colorSpec)
                 end
         end
     case 'cell'
-        colorList = nan(length(colorSpec),3);
+        colorList = [];%nan(length(colorSpec),3);
         for i = 1:length(colorSpec)
-            colorList(i,:) = parseColorSpec(colorSpec{i});
+            colorList = [colorList;parseColorSpec(colorSpec{i})];
         end
 end
 end
