@@ -1,119 +1,126 @@
 function imHandle = imagestats(imHandle)
-imHandle.UserData.ROI= [];
-imHandle.UserData.Comparison = struct([]);
-c = uicontextmenu('UserData',struct('imHandle',imHandle));
-imHandle.UIContextMenu = c;
-uimenu(c,'Label','Draw New ROI','Callback',@drawNewROI);
-uimenu(c,'Label','Clear All ROIs','Callback',@clearAllROI);
-addlistener(imHandle,'CData','PostSet',@cDataChange)
+    imHandle.UserData.ROI= [];
+    imHandle.UserData.Comparison = struct([]);
+    c = uicontextmenu('UserData',struct('imHandle',imHandle));
+    imHandle.UIContextMenu = c;
+    uimenu(c,'Label','Draw New ROI','Callback',@drawNewROI);
+    uimenu(c,'Label','Clear All ROIs','Callback',@clearAllROI);
+    addlistener(imHandle,'CData','PostSet',@cDataChange);
 end
 
 function ROI = updateROI(ROI)
-for i = 1:length(ROI);
-    index = findROI(ROI(i).imHandle,ROI(i).patchHandle(1));
-    ColorOrder = get(ancestor(ROI(i).patchHandle(1),'axes'),'ColorOrder');
-    set(ROI(i).patchHandle(:),'FaceColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'EdgeColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:));
-end
-for k = 1:length(ROI);
-    index = findROI(ROI(k).imHandle,ROI(k).patchHandle(1));
-    mask = getROImask(ROI(k).imHandle,ROI(k).patchHandle);
-    ROI1 = getROIdata(ROI(k).imHandle,mask);
-    fnames = fieldnames(ROI1);
-    for i = 2:length(fnames)
-        ROI(k).(fnames{i}) = ROI1.(fnames{i});
+    for i = 1:length(ROI);
+        index = findROI(ROI(i).imHandle,ROI(i).patchHandle(1));
+        ColorOrder = get(ancestor(ROI(i).patchHandle(1),'axes'),'ColorOrder');
+        set(ROI(i).patchHandle(:),'FaceColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:),'EdgeColor',ColorOrder(mod(index-1,size(ColorOrder,1))+1,:));
     end
-    if ~isempty(ROI(k).statTable) && ishandle(ROI(k).statTable)
-        set(ROI(k).statTable,'Data',ROI2cell(ROI(k)));
-    end
-    for i = 1:length(ROI(k).patchHandle)
-        UIMenu = ROI(k).patchHandle(i).UIContextMenu;
-        UIMenu.Children(end).Label = ROI(k).Name;
-        compareIndex = find(strcmp({UIMenu.Children.Label},'Compare Against...'));
-        compareMenu = UIMenu.Children(compareIndex);
-        if ~isempty(compareMenu.Children)
-            delete(compareMenu.Children);
+    for k = 1:length(ROI);
+        index = findROI(ROI(k).imHandle,ROI(k).patchHandle(1));
+        mask = getROImask(ROI(k).imHandle,ROI(k).patchHandle);
+        ROI1 = getROIdata(ROI(k).imHandle,mask);
+        fnames = fieldnames(ROI1);
+        for i = 2:length(fnames)
+            ROI(k).(fnames{i}) = ROI1.(fnames{i});
         end
-        for j = [1:index-1 index+1:length(ROI(k).imHandle.UserData.ROI)];
-            uimenu('Parent',compareMenu,'Label',ROI(k).imHandle.UserData.ROI(j).Name,'Callback',@compareAgainst,'ForeGroundColor',ROI(k).imHandle.UserData.ROI(j).patchHandle(1).FaceColor);
+        if ~isempty(ROI(k).statTable) && ishandle(ROI(k).statTable)
+            set(ROI(k).statTable,'Data',ROI2cell(ROI(k)));
         end
-    end
-    imHandle = ROI(k).imHandle;
-    for i = 1:length(imHandle.UserData.Comparison)
-        if strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).bgROI)
-            index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).fgROI));
-            index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).bgROI));
-            Comparison = getComparison(imHandle,index0,index1);
-            if isfield(imHandle.UserData.Comparison(i),'compTable')
-                Comparison.compTable = imHandle.UserData.Comparison(i).compTable;
-                if  ~isempty(Comparison.compTable) && ishandle(Comparison.compTable)
-                    set(Comparison.compTable,'Data',comp2cell(Comparison));
-                end
-            else
-                Comparison.compTable = [];
+        for i = 1:length(ROI(k).patchHandle)
+            UIMenu = ROI(k).patchHandle(i).UIContextMenu;
+            UIMenu.Children(end).Label = ROI(k).Name;
+            compareIndex = find(strcmp({UIMenu.Children.Label},'Compare Against...'));
+            compareMenu = UIMenu.Children(compareIndex);
+            if ~isempty(compareMenu.Children)
+                delete(compareMenu.Children);
             end
-            imHandle.UserData.Comparison(i) = Comparison;
+            for j = [1:index-1 index+1:length(ROI(k).imHandle.UserData.ROI)];
+                uimenu('Parent',compareMenu,'Label',ROI(k).imHandle.UserData.ROI(j).Name,'Callback',@compareAgainst,'ForeGroundColor',ROI(k).imHandle.UserData.ROI(j).patchHandle(1).FaceColor);
+            end
+        end
+        imHandle = ROI(k).imHandle;
+        for i = 1:length(imHandle.UserData.Comparison)
+            if strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(ROI(k).Name,imHandle.UserData.Comparison(i).bgROI)
+                index0 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).fgROI));
+                index1 = find(strcmp({imHandle.UserData.ROI.Name},imHandle.UserData.Comparison(i).bgROI));
+                Comparison = getComparison(imHandle,index0,index1);
+                if isfield(imHandle.UserData.Comparison(i),'compTable')
+                    Comparison.compTable = imHandle.UserData.Comparison(i).compTable;
+                    if  ~isempty(Comparison.compTable) && ishandle(Comparison.compTable)
+                        set(Comparison.compTable,'Data',comp2cell(Comparison));
+                    end
+                else
+                    Comparison.compTable = [];
+                end
+                imHandle.UserData.Comparison(i) = Comparison;
+            end
         end
     end
-end
 end
 
 function cDataChange(hObject,eventdata)
-imHandle = eventdata.AffectedObject;
-imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
+    imHandle = eventdata.AffectedObject;
+    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 
 function clearAllROI(hObject,eventdata)
-imHandle = hObject.Parent.UserData.imHandle;
-for i = 1:length(imHandle.UserData.ROI)
-    if ishandle(imHandle.UserData.ROI(i).statTable)
-        delete(ancestor(imHandle.UserData.ROI(i).statTable,'figure'))
+    imHandle = hObject.Parent.UserData.imHandle;
+    for i = 1:length(imHandle.UserData.ROI)
+        if ishandle(imHandle.UserData.ROI(i).statTable)
+            delete(ancestor(imHandle.UserData.ROI(i).statTable,'figure'))
+        end
+        delete(imHandle.UserData.ROI(i).patchHandle);
     end
-    delete(imHandle.UserData.ROI(i).patchHandle);
-end
-imHandle.UserData.ROI = [];
-for i = 1:length(imHandle.UserData.Comparison)
-    if isfield(imHandle.UserData.Comparison(i),'compTable') && ishandle(imHandle.UserData.Comparison(i).compTable)
-        delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
+    imHandle.UserData.ROI = [];
+    for i = 1:length(imHandle.UserData.Comparison)
+        if isfield(imHandle.UserData.Comparison(i),'compTable') && ishandle(imHandle.UserData.Comparison(i).compTable)
+            delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
+        end
     end
-end
-imHandle.UserData.Comparison = imHandle.UserData.Comparison([]);
+    imHandle.UserData.Comparison = imHandle.UserData.Comparison([]);
 end
 
 function deleteROI(hObject,eventdata);
-imHandle = hObject.Parent.UserData.imHandle;
-patchHandle = hObject.Parent.UserData.patchHandle;
-[index, patchindex] = findROI(imHandle,patchHandle);
-delete(patchHandle);
-if length(imHandle.UserData.ROI(index).patchHandle) == 1
-    if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
-        delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
-    end
-    keepidx = 1:length(imHandle.UserData.Comparison);
-    for i = 1:length(imHandle.UserData.Comparison)
-        if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).bgROI)
-            keepidx(i) = 0;
-            if ~isempty(imHandle.UserData.Comparison(i).compTable) && ishandle(imHandle.UserData.Comparison(i).compTable)
-                delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
+    imHandle = hObject.Parent.UserData.imHandle;
+    patchHandle = hObject.Parent.UserData.patchHandle;
+    [index, patchindex] = findROI(imHandle,patchHandle);
+    delete(patchHandle);
+    if length(imHandle.UserData.ROI(index).patchHandle) == 1
+        if ~isempty(imHandle.UserData.ROI(index).statTable) && ishandle(imHandle.UserData.ROI(index).statTable)
+            delete(ancestor(imHandle.UserData.ROI(index).statTable,'figure'));
+        end
+        keepidx = 1:length(imHandle.UserData.Comparison);
+        for i = 1:length(imHandle.UserData.Comparison)
+            if strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).fgROI) || strcmp(imHandle.UserData.ROI(index).Name,imHandle.UserData.Comparison(i).bgROI)
+                keepidx(i) = 0;
+                if ~isempty(imHandle.UserData.Comparison(i).compTable) && ishandle(imHandle.UserData.Comparison(i).compTable)
+                    delete(ancestor(imHandle.UserData.Comparison(i).compTable,'figure'));
+                end
             end
         end
+        imHandle.UserData.Comparison = imHandle.UserData.Comparison(keepidx(keepidx>0));
+        imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
+        imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
+    else
+        imHandle.UserData.ROI(index).patchHandle = imHandle.UserData.ROI(index).patchHandle([1:patchindex-1 patchindex+1:end]);
+        imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
     end
-    imHandle.UserData.Comparison = imHandle.UserData.Comparison(keepidx(keepidx>0));
-    imHandle.UserData.ROI = imHandle.UserData.ROI([1:index-1 index+1:end]);
-    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
-else
-    imHandle.UserData.ROI(index).patchHandle = imHandle.UserData.ROI(index).patchHandle([1:patchindex-1 patchindex+1:end]);
-    imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
-end
 end
 
-function addNewROI(hObject,eventdata);
+function newPatchHandle = addNewROI(hObject,xy);
 imHandle = hObject.Parent.UserData.imHandle;
 patchHandle = hObject.Parent.UserData.patchHandle;
 axH = ancestor(imHandle,'Axes');
 index = findROI(imHandle,patchHandle);
 patchindex = length(imHandle.UserData.ROI(index).patchHandle)+1;
-[~, x, y] = roipoly;
-imHandle.UserData.ROI(index).patchHandle(patchindex) = newPatch(imHandle,x,y,index);
+switch class(xy)
+    case 'matlab.ui.eventdata.ActionData'
+        [mask, x, y] = roipoly;
+    otherwise
+    x = xy(:,1);
+    y = xy(:,2);
+end
+newPatchHandle = newPatch(imHandle,x,y,index);
+imHandle.UserData.ROI(index).patchHandle(patchindex) = newPatchHandle;
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 
@@ -282,9 +289,16 @@ imHandle.UserData.ROI(index).Name = NewName;
 imHandle.UserData.ROI = updateROI(imHandle.UserData.ROI);
 end
 
-function drawNewROI(hObject,eventdata)
+function patchHandle = drawNewROI(hObject,xy)
 imHandle = hObject.Parent.UserData.imHandle;
-[mask, x, y] = roipoly;
+switch class(xy)
+    case 'matlab.ui.eventdata.ActionData'
+        [mask, x, y] = roipoly;
+    otherwise
+    x = xy(:,1);
+    y = xy(:,2);
+    mask = roipoly(imHandle.XData,imHandle.YData,imHandle.CData,x,y);
+end
 index = length(imHandle.UserData.ROI)+1;
 patchHandle = newPatch(imHandle,x,y,index);
 roidata = getROIdata(imHandle,mask);

@@ -1,8 +1,14 @@
-function mov2file(M,VidName,fps,format)
+%mov2file write movie to video file using VideoWriter
+%
+%mov2file(M,VidName,fps,format)
+function mov2file(M,VidName,fps,format,varargin)
 if ~exist('format','var')
     format = 'Motion JPEG AVI';
 end
 VidObj = VideoWriter(VidName,format);
+if ~isempty(varargin)
+    VidObj = setprops(VidObj,varargin{:});
+end
 ext = VidObj.FileFormat;
 [pth name] = fileparts(VidName);
 VidName = fullfile(pth,[name '.' ext]);
