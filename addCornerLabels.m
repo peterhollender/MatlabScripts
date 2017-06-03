@@ -2,6 +2,12 @@ function [txt ptch] = addCornerLabels(sp,fontSize,location);
 if ~exist('location','var')
     location = 'northeast';
 end
+if ~exist('fontSize','var')
+    fontSize = get(sp(1),'fontSize');
+end
+axcolor = get(sp(1),'Color');
+white = mean(axcolor)>0.5;
+
     pxW = fontSize*1.3;
     pxH = fontSize*1.5;
     for i = 1:size(sp(:));
@@ -39,6 +45,6 @@ end
             x0 = xlim(1.5-0.5*xi) + xi*szX/2;
             y0 = ylim(1.5-0.5*yi) + yi*szY/2;
     
-    ptch(i) = patch(x0+[-1 1 1 -1]*szX/2,y0+[-1 -1 1 1]*szY/2,'k-');
-    txt(i) = text(x0,y0,char('A'+i-1),'FontSize',fontSize,'FontWeight','bold','color','w','horizontalalignment','center','verticalalignment','middle');
+    ptch(i) = patch(x0+[-1 1 1 -1]*szX/2,y0+[-1 -1 1 1]*szY/2,'k-','FaceColor',[1 1 1]*white);
+    txt(i) = text(x0,y0,char('A'+i-1),'FontSize',fontSize,'FontWeight','bold','Color',[1 1 1]*(~white),'horizontalalignment','center','verticalalignment','middle');
    end
