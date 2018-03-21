@@ -1,19 +1,21 @@
 classdef ProgressBar < handle
     properties
-        percent_done = 0;
         N = 1;
         index = 0;
         time_remaining = NaN;
         elapsed_time = 0;
-        msg = '';
+        as_text = false;
+        as_waitbar = true;
     end
     properties (Hidden=true)
+        msg = '';
         buffer = [0];
         min_buffer = 1;
-        buffer_size = 1;
+        buffer_size = 0;
         waitbar_handle = [];
         start_time = NaN;
         last_time = NaN;
+        last_msg = '';
     end
     methods
         function self = ProgressBar(N, msg)
@@ -21,17 +23,22 @@ classdef ProgressBar < handle
             if exist('msg','var')
                 self.msg = msg;
             end
-            self.index = 0;
-            self.start_time = tic;
-            self.buffer_size = N;
-            self.buffer = nan(self.buffer_size,1);
             self.waitbar_handle = waitbar(0,self.get_msg); 
+            self.reset
         end
         function reset(self)
             self.index = 0;
-            self.start_time = tic;
+            self.start_time = NaN;
             self.last_time = 0;
-            self.buffer = nan(self.buffer_size,1);
+            self.elapsed_time = 0;
+            if self.buffer_size > 0
+                self.buffer = nan(self.buffer_size,1);
+            end
+            self.update;
+        end
+        function start(self)
+            self.start_time = tic;
+            self.index = 1;
             self.update;
         end
         function msg = get_msg(self)
@@ -39,27 +46,45 @@ classdef ProgressBar < handle
                 self.N, self.time2clock(self.elapsed_time),...
                 self.time2clock(self.time_remaining+self.elapsed_time));
         end
-        function increment(self)
-            self.index = self.index+1;
-            new_time = toc(self.start_time);
-            self.buffer(mod(self.index - 1,self.buffer_size)+1) = new_time-self.last_time;
-            self.last_time = new_time;
-            if self.index > self.N
-                close(self.waitbar_handle)
+        function next(self)
+            if self.index == 0
+                self.start
             else
-                self.update;
+                new_time = toc(self.start_time);
+                if self.buffer_size > 0
+                    self.buffer(mod(self.index-1,self.buffer_size)+1) = new_time-self.last_time;
+                end
+                self.index = self.index+1;
+                self.last_time = new_time;
+                if self.index > self.N
+                    self.close
+                else
+                    self.update;
+                end
             end
         end
         function t_avg = time_per_inc(self)
-            if self.index < self.min_buffer
+            if self.index <= self.min_buffer
                 t_avg = NaN;
             else
-                t_avg = nanmean(self.buffer);
+                if self.buffer_size > 0
+                    t_avg = nanmean(self.buffer);
+                else
+                    t_avg = self.elapsed_time / (self.index - 1);
+                end
             end
         end
         function t_remain = estimate_remaining_time(self)
             t_avg = self.time_per_inc;
-            t_remain = (self.N-self.index)*t_avg;
+            t_remain = (self.N-(self.index-1)) * t_avg;
+        end
+        function close(self)
+            if ishandle(self.waitbar_handle)
+                close(self.waitbar_handle)
+            end
+            if self.as_text
+                fprintf('\n')
+            end
         end
         function update(self)
             if isnan(self.start_time)
@@ -67,10 +92,21 @@ classdef ProgressBar < handle
             end
             self.elapsed_time = toc(self.start_time);
             self.time_remaining = self.estimate_remaining_time;
-            if ~ishandle(self.waitbar_handle)
-                self.waitbar_handle = waitbar(self.index/self.N,self.get_msg);
+            new_msg = self.get_msg;
+            if self.as_waitbar
+                if ~ishandle(self.waitbar_handle)
+                    self.waitbar_handle = waitbar(self.index/self.N,new_msg);
+                else
+                    waitbar(self.index/self.N,self.waitbar_handle,new_msg);
+                end
             else
-                waitbar(self.index/self.N,self.waitbar_handle,self.get_msg);
+                if ishandle(self.waitbar_handle)
+                    close(self.waitbar_handle)
+                end
+            end
+            if self.as_text
+                fprintf([repmat('\b',1,length(self.last_msg)),'%s'],new_msg);            
+                self.last_msg = new_msg;               
             end
         end
     end
@@ -79,7 +115,7 @@ classdef ProgressBar < handle
             if isnan(time)
                 clockstr = '--:--';
             else
-                clockstr = sprintf('%02d:%02d',floor(time/60),floor(mod(time,60)));
+                clockstr = sprintf('%02.0f:%02.0f',round(time/60),round(mod(time,60)));
             end
         end
     end
