@@ -143,7 +143,9 @@ classdef ProgressBar < handle
             if isnan(time)
                 clockstr = '--:--';
             else
-                clockstr = sprintf('%02.0f:%02.0f',round(time/60),round(mod(time,60)));
+                minutes = floor((time)/60);
+                seconds = floor(time - (minutes*60));
+                clockstr = sprintf('%02.0f:%02.0f', minutes, seconds);
             end
         end
     end
