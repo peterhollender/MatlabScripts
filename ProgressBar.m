@@ -10,7 +10,7 @@ classdef ProgressBar < handle
 
     end
     properties (Hidden=true)
-        buffer_size = 0;        
+        buffer_size = 1;        
         min_buffer = 1;
         buffer = [0];
         waitbar_handle = NaN;
@@ -61,7 +61,7 @@ classdef ProgressBar < handle
             self.index = 1;
             self.last_time = 0;
             self.elapsed_time = 0;
-            self.update;
+            self.update;    
         end
 
         function next(self)
@@ -77,7 +77,7 @@ classdef ProgressBar < handle
                 self.index = self.index+1;
                 self.last_time = new_time;
                 if self.index > self.N
-                    self.close
+                    self.close;
                 else
                     self.update;
                 end
@@ -143,8 +143,9 @@ classdef ProgressBar < handle
             if isnan(time)
                 clockstr = '--:--';
             else
-                minutes = floor((time)/60);
-                seconds = floor(time - (minutes*60));
+                nearest_second = round(time);
+                minutes = floor(nearest_second/60);
+                seconds = nearest_second - (minutes*60);
                 clockstr = sprintf('%02.0f:%02.0f', minutes, seconds);
             end
         end
