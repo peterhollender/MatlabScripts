@@ -187,7 +187,7 @@ if isempty(st) || any(~ishandle(st))
     fpos = get(figH,'position');
     f = figure;
     set(f,'Position',[fpos(1) fpos(2) 200 170]);
-    set(f,'ToolBar','none','MenuBar','none','NumberTitle','off','Name','Stats','Resize','off')
+    set(f,'ToolBar','none','MenuBar','none','NumberTitle','off','Name',imHandle.UserData.ROI(index).Name,'Resize','off')
     C = ROI2cell(ROI);
     imHandle.UserData.ROI(index).statTable = uitable('Units','pixels','Position',[0 0 210 170],'ColumnWidth',{80,120},'RowStriping','on','Data',C,'ColumnName',[],'RowName',[],'FontSize',14);
 end
@@ -221,7 +221,8 @@ if newComp || ~ishandle(imHandle.UserData.Comparison(compindex).compTable)
     fpos = get(ancestor(imHandle,'figure'),'position');
     f = figure;
     set(f,'Position',[fpos(1)+200 fpos(2) 230 230]);
-    set(f,'ToolBar','none','MenuBar','none','NumberTitle','off','Name','Comparison','Resize','off')
+    compName = sprintf('%s vs %s',imHandle.UserData.ROI(index0).Name,imHandle.UserData.ROI(index1).Name);
+    set(f,'ToolBar','none','MenuBar','none','NumberTitle','off','Name',compName,'Resize','off')
     C = comp2cell(Comparison);
     Comparison.compTable = uitable('Units','pixels','Position',[0 0 235 230],'ColumnWidth',{100,130},'RowStriping','on','Data',C,'ColumnName',[],'RowName',[],'FontSize',14);
 else
@@ -279,10 +280,10 @@ oldName = imHandle.UserData.ROI(index).Name;
 eventdata.Source.Label = NewName;
 for i = 1:length(imHandle.UserData.Comparison)
     if strcmp(imHandle.UserData.Comparison(i).fgROI,oldName)
-        imHandle.UserData.Comparison(i).fgROI = newName;
+        imHandle.UserData.Comparison(i).fgROI = NewName;
     end
     if strcmp(imHandle.UserData.Comparison(i).bgROI,oldName)
-        imHandle.UserData.Comparison(i).bgROI = newName;
+        imHandle.UserData.Comparison(i).bgROI = NewName;
     end
 end
 imHandle.UserData.ROI(index).Name = NewName;

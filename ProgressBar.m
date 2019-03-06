@@ -6,7 +6,8 @@ classdef ProgressBar < handle
         elapsed_time = 0;
         as_text = false;
         as_waitbar = true;        
-        msg = '';        
+        msg = '';
+        Tag = 'ProgressBarObject';
 
     end
     properties (Hidden=true)
@@ -99,7 +100,7 @@ classdef ProgressBar < handle
             new_msg = self.get_msg;
             if self.as_waitbar
                 if ~ishandle(self.waitbar_handle)
-                    self.waitbar_handle = waitbar(self.index/self.N,new_msg);
+                    self.waitbar_handle = waitbar(self.index/self.N,new_msg,'Tag','ProgressBar');
                 else
                     waitbar(self.index/self.N,self.waitbar_handle,new_msg);
                 end
