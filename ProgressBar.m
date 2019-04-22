@@ -6,15 +6,13 @@ classdef ProgressBar < handle
         elapsed_time = 0;
         as_text = false;
         as_waitbar = true;        
+        waitbar_handle = -1;
         msg = '';
-        Tag = 'ProgressBarObject';
-
     end
     properties (Hidden=true)
-        buffer_size = 1;        
+        buffer_size = 0;        
         min_buffer = 1;
-        buffer = [0];
-        waitbar_handle = NaN;
+        buffer = [0];        
         start_time = NaN;
         last_time = 0;
         last_msg = '';
@@ -27,8 +25,11 @@ classdef ProgressBar < handle
             %PROGRESSBAR creates a text or graphical progress bar, which is
             % updated by calling the next() method.
             %
-            %PROGRESSBAR(N, 'p1', v1, ...) sets the properties of
-            % the objec.
+            %PROGRESSBAR(N, 'p1', v1, ...) sets the properties
+            %PROGRESSBAR(N, 'text', 'p1', v1, ...) makes a text-based
+            %ProgressBar
+            %PROGRESSBAR(N, 'waitbar', 'p1', v1, ...) makes a waitbar-based
+            %ProgressBar
             %
             %INPUT PROPERTIES:
             %   char msg: the string to be displayed
@@ -50,7 +51,21 @@ classdef ProgressBar < handle
             %
             
             self.N = N;
-            self = setprops(self, varargin);
+            if mod(length(varargin),2) ~= 0
+                switch varargin{1}
+                    case 'text'
+                        self.as_text = true;
+                        self.as_waitbar = false;
+                    case 'waitbar'
+                        self.as_text = false;
+                        self.as_waitbar = true;
+                    otherwise
+                        error('could not parse arguments')
+                end
+                self = setprops(self, varargin(2:end));
+            else
+                self = setprops(self, varargin);
+            end
         end
         function reset(self)
             % Resets the Progress bar and restarts the clock
@@ -139,7 +154,7 @@ classdef ProgressBar < handle
         end
         
     end
-    methods (Static)
+    methods (Static, Hidden)
         function clockstr = time2clock(time)
             if isnan(time)
                 clockstr = '--:--';
@@ -149,6 +164,11 @@ classdef ProgressBar < handle
                 seconds = nearest_second - (minutes*60);
                 clockstr = sprintf('%02.0f:%02.0f', minutes, seconds);
             end
+        end
+    end
+    methods (Static)
+        function delete_waitbars()
+            delete(findall(0,'Tag','ProgressBar'));
         end
     end
     
